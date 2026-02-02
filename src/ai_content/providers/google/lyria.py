@@ -101,13 +101,40 @@ class GoogleLyriaProvider:
             logger.warning("Lyria does not support vocals/lyrics. Ignoring lyrics parameter.")
 
         audio_chunks: list[bytes] = []
+        capture_done = asyncio.Event()
+        chunk_count = 0
+
+        async def receive_audio(session):
+            """Receive audio from Lyria stream in dedicated coroutine."""
+            nonlocal chunk_count
+            try:
+                async for message in session.receive():
+                    if hasattr(message, "server_content") and message.server_content:
+                        if hasattr(message.server_content, "audio_chunks"):
+                            for chunk in message.server_content.audio_chunks:
+                                if hasattr(chunk, "data") and chunk.data:
+                                    audio_chunks.append(chunk.data)
+                                    chunk_count += 1
+                    await asyncio.sleep(0)  # Yield control
+                    if capture_done.is_set():
+                        break
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.error(f"Audio receive error: {e}")
 
         try:
             async with client.aio.live.music.connect(model=self.settings.music_model) as session:
+                logger.info("   ✓ Connection established")
+
+                # Start receiver task first
+                receive_task = asyncio.create_task(receive_audio(session))
+
                 # Set weighted prompts
                 await session.set_weighted_prompts(
                     prompts=[types.WeightedPrompt(text=prompt, weight=1.0)]
                 )
+                logger.info("   ✓ Prompt configured")
 
                 # Configure generation
                 await session.set_music_generation_config(
@@ -116,28 +143,24 @@ class GoogleLyriaProvider:
                         temperature=temperature,
                     )
                 )
+                logger.info(f"   ✓ Config set (BPM={bpm})")
 
                 # Start streaming
                 await session.play()
+                logger.info(f"   ▶ Streaming for {duration_seconds}s...")
 
-                start_time = asyncio.get_event_loop().time()
+                # Wait for duration (robust: uses asyncio.sleep)
+                await asyncio.sleep(duration_seconds)
 
-                while True:
-                    turn = session.receive()
-                    async for response in turn:
-                        # Use audio_chunks as per official docs
-                        # https://ai.google.dev/gemini-api/docs/music-generation
-                        if (
-                            response.server_content
-                            and hasattr(response.server_content, "audio_chunks")
-                            and response.server_content.audio_chunks
-                        ):
-                            audio_chunks.append(response.server_content.audio_chunks[0].data)
-
-                    elapsed = asyncio.get_event_loop().time() - start_time
-                    if elapsed >= duration_seconds:
-                        await session.pause()
-                        break
+                # Stop cleanly
+                logger.info(f"   ⏸ Stopping... ({chunk_count} chunks received)")
+                capture_done.set()
+                await session.stop()
+                receive_task.cancel()
+                try:
+                    await receive_task
+                except asyncio.CancelledError:
+                    pass
 
         except Exception as e:
             logger.error(f"Lyria generation failed: {e}")
