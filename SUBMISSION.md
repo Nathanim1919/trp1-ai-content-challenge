@@ -465,7 +465,7 @@ operation = await client.aio.models.generate_videos(...)
 ## Submission Links
 
 - **YouTube Video(s):** [To be added after upload]
-- **GitHub Repository:** [Your repo URL]
+- **GitHub Repository:** https://github.com/Nathanim1919/trp1-ai-content-challenge
 
 ---
 
