@@ -464,7 +464,8 @@ operation = await client.aio.models.generate_videos(...)
 
 ## Submission Links
 
-- **YouTube Video(s):** [To be added after upload]
+- **YouTube Video 1 (Ethiopian Jazz):** https://youtu.be/ySi5ubypoYw
+- **YouTube Video 2 (Bachata Fusion):** https://youtu.be/IA01XXqypmA
 - **GitHub Repository:** https://github.com/Nathanim1919/trp1-ai-content-challenge
 
 ---
@@ -473,8 +474,9 @@ operation = await client.aio.models.generate_videos(...)
 
 - [x] Audio file 1: `exports/ethio_jazz_instrumental.wav` (5.13 MB, 30s)
 - [x] Audio file 2: `exports/shega_lij_bachata_instrumental.wav` (5.13 MB, 30s)
-- [ ] Video file 1: Not generated (API quota exhausted)
-- [ ] Combined video: Not generated (no video available)
+- [x] Video file 1: `exports/ethio_jazz_video.mp4` (519 KB) - Created with FFmpeg
+- [x] Video file 2: `exports/bachata_video.mp4` (523 KB) - Created with FFmpeg
+- [x] YouTube uploads: Both videos uploaded successfully
 - [x] SUBMISSION.md (this file)
 - [x] Bug fixes: `src/ai_content/providers/google/veo.py` (API compatibility)
 

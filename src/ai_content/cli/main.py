@@ -4,6 +4,8 @@ AI Content CLI.
 Command-line interface for the AI content generation package.
 """
 
+import utils.transport
+import utils.session
 import asyncio
 import logging
 from pathlib import Path
